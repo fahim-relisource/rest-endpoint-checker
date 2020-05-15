@@ -1,0 +1,36 @@
+{
+  "name": "Fake JSON",
+  "version": "1.0",
+  "endpoints": [
+    {
+      "name": "List User",
+      "url": "https://reqres.in/api/users?page=1",
+      "method": "GET",
+      "headers": [],
+      "requestBody": []
+    },
+    {
+      "name": "Single User",
+      "url": "https://reqres.in/api/users/2",
+      "method": "GET",
+      "headers": [],
+      "requestBody": []
+    },
+    {
+      "name": "Create User",
+      "url": "https://reqres.in/api/users",
+      "method": "POST",
+      "headers": [],
+      "requestBody": [
+        {
+          "name": "name",
+          "type": "text"
+        },
+        {
+          "name": "Job",
+          "type": "text"
+        }
+      ]
+    }
+  ]
+}

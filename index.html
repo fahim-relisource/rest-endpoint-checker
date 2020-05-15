@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script
+      src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js"
+      defer
+    ></script>
+		<script src="./eApp.js"></script>
+    <title>RESTful Endpoints Checker</title>
+    <style>
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .title {
+        font-size: 24px;
+        font-weight: 600;
+      }
+      .request-area {
+        display: flex;
+      }
+      .request-area input {
+        flex-basis: 80%;
+        height: 40px;
+        font-size: 20px;
+        padding: 0 0 0 10px;
+      }
+      .request-area button {
+        margin: 0 0 0 5px;
+        flex-basis: 20%;
+      }
+      .body {
+        margin: 10px 0 0 0;
+        display: flex;
+        justify-content: space-between;
+        height: 80vh;
+      }
+      .body-item {
+        display: flex;
+        flex-direction: column;
+        margin: 0 5px;
+      }
+      .left {
+        flex-basis: 20%;
+      }
+      .middle {
+        flex-basis: 30%;
+      }
+      .right {
+        flex-basis: 50%;
+      }
+      .endpoints {
+        border: 1px solid gray;
+        display: flex;
+        flex-direction: column;
+      }
+      .endpoint {
+        margin: 3px;
+      }
+      .request-body {
+        border: 1px solid gray;
+        display: flex;
+        flex-direction: column;
+      }
+      .headers {
+        border: 1px solid gray;
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 10px;
+      }
+      .output {
+        border: 1px solid gray;
+        padding: 5px;
+        width: 50vw;
+        overflow-x: auto;
+				overflow-y: auto;
+				display: flex;
+				min-height: 70px;
+				justify-content: center;
+      }
+      .output-header {
+        display: flex;
+        justify-content: space-between;
+        padding: 0 10px 0 0;
+      }
+      .error {
+        border: 1px solid red;
+      }
+      .success {
+        border: 1px solid green;
+      }
+      .output-text {
+        overflow-wrap: break-word;
+      }
+      .request-input {
+        height: 30px;
+        margin: 3px;
+        padding: 3px;
+      }
+      /* The Modal (background) */
+      .modal {
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 1; /* Sit on top */
+        left: 0;
+        top: 0;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: auto; /* Enable scroll if needed */
+        background-color: rgb(0, 0, 0); /* Fallback color */
+        background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
+      }
+      /* Modal Content/Box */
+      .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto; /* 15% from the top and centered */
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%; /* Could be more or less, depending on screen size */
+      }
+      .modal-body {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      /* The Close Button */
+      .close {
+        float: right;
+        font-weight: bold;
+      }
+      .close:hover,
+      .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+			}
+			
+			.loader {
+				border: 5px solid #f3f3f3; /* Light grey */
+				border-top: 5px solid #555;
+				border-radius: 50%;
+				width: 50px;
+				height: 50px;
+				animation: spin 1s linear infinite;
+			}
+			
+			@keyframes spin {
+				0% { transform: rotate(0deg); }
+				100% { transform: rotate(360deg); }
+			}
+    </style>
+  </head>
+  <body x-data="loadApp()">
+    <div class="header">
+      <span class="title"
+        >RESTful Endpoints Checker
+        <button @click="$refs.modal.style.display='block'">❓</button></span
+      >
+      <div class="current-function">
+        <span x-text="config.name"></span>
+        (v<span x-text="config.version"></span>)
+      </div>
+      <input
+        style="display: none;"
+        type="file"
+        accept=".json"
+        id="config-loader"
+        x-on:change="loadConfig($event)"
+      />
+      <button @click="document.getElementById('config-loader').click();">
+        Load Config
+      </button>
+    </div>
+    <div class="request-area">
+      <input type="text" x-model="requestUrl" />
+      <button
+        x-bind:disabled="selectedFunction === null"
+        @click="sendRequest()"
+      >
+        Send
+      </button>
+		</div>
+		
+    <div class="body">
+      <div class="body-item left">
+        <span>Endpoints</span>
+        <div class="endpoints">
+          <template x-for="(item, index) in config.endpoints" :key="index">
+            <button class="endpoint" @click="selectThisFunction(index)">
+              <span x-text="item.name"></span>
+            </button>
+          </template>
+        </div>
+      </div>
+      <div class="body-item middle">
+        <span>Headers</span>
+        <div class="headers">
+          <template
+            x-if="selectedFunction !== null "
+            x-for="(item, index) in selectedFunction.headers"
+            :key="index"
+          >
+            <input
+              class="request-input"
+              type="text"
+              x-bind:name="item"
+              x-bind:placeholder="item"
+              x-model="headers[item]"
+            />
+          </template>
+        </div>
+        <span>Request Body</span>
+        <div class="request-body">
+          <template
+            x-if="selectedFunction !== null "
+            x-for="(item, index) in selectedFunction.requestBody"
+            :key="index"
+          >
+            <input
+              class="request-input"
+              x-bind:type="item.type"
+              x-bind:name="item.name"
+              x-bind:placeholder="item.name"
+              x-model="requestData[item.name]"
+            />
+          </template>
+        </div>
+      </div>
+      <div class="body-item right">
+        <div class="output-header">
+					<span>Output</span>
+          <span x-text="output ? output.code : ''"></span>
+        </div>
+        <div
+          class="output"
+          x-bind:class="{'error': output ? output.error:false, 'success': output ? !output.error : false}"
+				>
+				<template x-if="showLoader">
+					<div  class="loader"></div>
+				</template>
+          <pre class="output-text" x-text="output ? output.data : ''"></pre>
+        </div>
+      </div>
+    </div>
+    <div class="modal" x-ref="modal">
+      <div class="modal-content">
+        <span class="close" @click="$refs.modal.style.display='none'">❌</span>
+        <div class="modal-body">
+          <h1>RESTful Endpoint Checker</h1>
+          <span>Developed By: <strong>FASTT Redesign Team</strong></span>
+					<hr />
+					<div style="width: 100%;">
+						<p>
+							How To Use
+							<ul>
+								<li>If you have config please load it using <strong>Load Config</strong></li>
+								<li>Select one endpoints</li>
+								<li>Check the endpoint url. you can update it.</li>
+								<li>Input the request body and headers</li>
+								<li>Hit <strong>Send</strong> and wait for response.</li>
+							</ul>
+						</p>
+					</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
